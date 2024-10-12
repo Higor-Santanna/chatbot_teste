@@ -1,6 +1,6 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-const { Client, LocalAuth, MessageMedia, Poll, PollVote } = require('whatsapp-web.js'); // Mudança Buttons
+const { Client, LocalAuth } = require('whatsapp-web.js'); // Mudança Buttons
 const client = new Client({
     authStrategy: new LocalAuth()
 });
@@ -53,11 +53,6 @@ const handleArticleSlide = async (userId, chat, client) => {
     await simulateTyping(chat);
 }
 
-const sendPoll = async (chatId) => {
-    const poll = new Poll('Qual período?', ['1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°', '10°']);
-    await client.sendMessage(chatId, poll);
-};
-
 const emojiRegex = /[\p{Emoji_Presentation}]/u;
 const textWithAccentsRegex = /^[\p{L}\s]+$/u;
 //Manipulador de mensagens
@@ -82,15 +77,15 @@ client.on('message', async msg => {
         userState[userId] = { stage: 'mainMenu' };
     }
 
-    if (userState[userId]?.stage === 'mainMenu') {
-        if (userMessage !== null && userMessage === '1' && userId.endsWith('@c.us')) {
+    if (userState[userId].stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '1') {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Você será o aluno líder?\n\n7 - Sim\n8 - Não');
             userState[userId].stage = 'leaderQuestion';
         }
     }
 
-    else if (userState[userId]?.stage === 'leaderQuestion') {
+    else if (userState[userId].stage === 'leaderQuestion') {
         if (msg.type === 'chat' && userMessage === '7') {
             await simulateTyping(chat);
             await client.sendMessage(userId, 'Me fale o seu nome?');
@@ -113,7 +108,6 @@ client.on('message', async msg => {
             await client.sendMessage(userId, `Você ${userMessage}, é o aluno líder do grupo e será responsável pela submissão dos demais arquivos da jornada.\nAgora me informe o seu email mais utilizado?`);
 
             userState[userId].stage = 'getEmail';
-            console.log(`Estado atualizado para ${userState[userId].stage}`);
         } else {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Por favor, me informe o seu nome para prosseguir com a inscrição');
@@ -124,7 +118,7 @@ client.on('message', async msg => {
         if (msg.type === 'chat') {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Verificando se o email é válido...');
-           await simulateTyping(chat)
+            await simulateTyping(chat)
             await client.sendMessage(userId, `Ok seu email ${userMessage}, foi cadastrado. \nMe fale todos os integrantes do grupo incluindo o líder, coloque o nome completo de cada integrante e separe o nome de cada aluno por uma vírgula.\nO grupo poderá ser composto de 5 á 10 alunos.\nSegue o exemplo de como deve ser feito:\n\n Neymar Júnior, Cristiano Ronaldo, Max Verstappen, Lewis Hamilton, Ayrton Senna`);
 
             userState[userId].stage = 'getGroupMembers';
@@ -136,7 +130,6 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getGroupMembers') {
         const groupMembers = userMessage.split(',').map(names => names.trim());
-        console.log(`Número de membros do grupo: ${groupMembers.length}`);
 
         if (groupMembers.length >= 5 && groupMembers.length <= 10 && msg.type === 'chat' && !emojiRegex.test(userMessage)) {
             await simulateTyping(chat)
@@ -145,7 +138,6 @@ client.on('message', async msg => {
             await client.sendMessage(userId, 'A inscrição dos integrantes foi concluída com sucesso.\nOk! Me fale quem é seu professor orientador?');
 
             userState[userId].stage = 'getGuidingTeacher';
-            console.log(`Estado do usuário: ${userState[userId]?.stage}`);
         } else {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Por favor, me informe entre 5 e 10 nomes separados por vírgula.');
@@ -174,7 +166,6 @@ client.on('message', async msg => {
             await client.sendMessage(userId, `Qual seu curso de graduação?\n\n1 - Administração\n2 - Análise e Desenvolvimento de Sistemas\n3- Agronomia\n4 - Arquitetura e Urbanismo\n5 - Ciências Contábeis\n6 - Comunicação Social\n7 - Direito - Matutino\n8 - Direito - Noturno\n9 - Educação Física - Bacharelado\n10 - Educação Física - Licenciatura\n11 - Enfermagem\n12 - Engenharia de Produção\n13 - Engenharia Mecânica\n14 - Farmácia\n15 - Fisioterapia\n16 - Medicina Veterinária\n17 - Odontologia\n18 - Pedagogia\n19 - Psicologia`);
 
             userState[userId].stage = 'getCourse';
-            console.log(`Estado do usuário: ${userState[userId]?.stage}`)
         } else {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Insira um título válido');
@@ -211,7 +202,6 @@ client.on('message', async msg => {
             await client.sendMessage(userId, `Qual seu período?\n\n1 - 1º (primeiro período)\n2 - 2º (segundo período)\n3 - 3º (terceiro período)\n4 - 4º (quarto período)\n5 - 5º (quinto período)\n6 - 6º (sexto período)\n7 - 7º (sétimo período)\n8 8º (oitavo período)\n9 - 9º (nono período)\n10 - 10º (décimo período)`);
 
             userState[userId].stage = 'getSendPoll';
-            console.log(`Estado do usuário: ${userState[userId]?.stage}`)
         } else {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Por favor, escolha uma das opções.');
@@ -292,7 +282,7 @@ client.on('message', async msg => {
         }
     }
 
-    else if (userState[userId]?.stage === 'getSimpleArticle') {
+    else if (userState[userId].stage === 'getSimpleArticle') {
         const contact = await msg.getContact();
         const name = contact.pushname;
         const media = await msg.downloadMedia();
@@ -308,35 +298,31 @@ client.on('message', async msg => {
         }
     }
 
-    if (userState[userId]?.stage === 'mainMenu') {
-        if (userMessage !== null && userMessage === '2' && userId.endsWith('@c.us')) {
+    if (userState[userId].stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '2') {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Você é o aluno líder?\n\n7 - Sim\n8 - Não');
             userState[userId].stage = 'leadeQuestion';
         }
     }
 
-    else if (userState[userId]?.stage === 'leadeQuestion') {
-        if (msg.type === 'chat') {
-            if (userMessage === '7') {
-                await simulateTyping(chat);
-                await client.sendMessage(userId, 'Me fale o seu nome?');
-                userState[userId].stage = 'getNameLeader'
-            } else if (userMessage === '8') {
-                await simulateTyping(chat);
-                await client.sendMessage(userId, 'Você não pode fazer a submissão do resumo/artigo ou slide, pois você não é o aluno líder.');
-
-                userState[userId].stage = 'initial';
-            }
+    else if (userState[userId].stage === 'leadeQuestion') {
+        if (msg.type === 'chat' && userMessage === '7') {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Me fale o seu nome?');
+            userState[userId].stage = 'getNameLeader'
+        } else if (msg.type === 'chat' && userMessage === '8') {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Você não pode fazer a submissão do resumo/artigo ou slide, pois você não é o aluno líder.');
+            userState[userId].stage = 'initial';
         } else {
             await simulateTyping(chat);
             await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
         }
     }
 
-    else if (userState[userId]?.stage === 'getNameLeader') {
-        const emojiRegex = /[\p{Emoji_Presentation}]/u;
-        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && /^[a-zA-Z\s]+$/.test(userMessage)) {
+    else if (userState[userId].stage === 'getNameLeader') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
             await handleLeaderValidation(userId, chat, client, msg)
             userState[userId].stage = 'getTeacher';
         } else {
@@ -345,9 +331,8 @@ client.on('message', async msg => {
         }
     }
 
-    else if (userState[userId]?.stage === 'getTeacher') {
-        const emojiRegex = /[\p{Emoji_Presentation}]/u;
-        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && /^[a-zA-Z\s]+$/.test(userMessage)) {
+    else if (userState[userId].stage === 'getTeacher') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
             await handleTeacherValidation(userId, chat, client, msg);
             userState[userId].stage = 'getTitle';
         } else {
@@ -356,11 +341,10 @@ client.on('message', async msg => {
         }
     }
 
-    else if (userState[userId]?.stage === 'getTitle') {
-        const emojiRegex = /[\p{Emoji_Presentation}]/u;
-        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && /^[a-zA-Z\s]+$/.test(userMessage)) {
+    else if (userState[userId].stage === 'getTitle') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
             await handleTitleValidation(userId, chat, client, msg);
-            await client.sendMessage(userId, 'Agora vamos submeter seu resumo expandido/artigo finalizado e enviar o mesmo ao orientador para correção.');
+            await client.sendMessage(userId, 'Agora vamos submeter seu resumo expandido/artigo finalizado e enviar o mesmo ao orientador para correção. Enviar o arquivo no formato PDF.');
             userState[userId].stage = 'getArticleAndSlide';
         } else {
             await simulateTyping(chat);
@@ -368,7 +352,7 @@ client.on('message', async msg => {
         }
     }
 
-    else if (userState[userId]?.stage === 'getArticleAndSlide') {
+    else if (userState[userId].stage === 'getArticleAndSlide') {
         const contact = await msg.getContact();
         const name = contact.pushname;
         const media = await msg.downloadMedia();
@@ -384,58 +368,145 @@ client.on('message', async msg => {
         }
     }
 
-    if (userState[userId]?.stage === 'mainMenu') {
-        if (userMessage !== null && userMessage === '3' && userId.endsWith('@c.us')) {
+    if (userState[userId].stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '3') {
             await simulateTyping(chat)
-            await client.sendMessage(userId, 'Você será o aluno líder?\n\n63 - Sim\n64 - Não');
-            userState[userId].stage = 'leaderQuestion';
+            await client.sendMessage(userId, 'Você é o aluno líder?\n\n7 - Sim\n8 - Não');
+            userState[userId].stage = 'leaderquestion';
         }
     }
 
-    else if (userState[userId]?.stage === 'leaderQuestion') {
-        if (userMessage !== null && userMessage === '63') {
-            await simulateTyping(chat)
+    else if (userState[userId].stage === 'leaderquestion') {
+        if (msg.type === 'chat' && userMessage === '7') {
+            await simulateTyping(chat);
             await client.sendMessage(userId, 'Me fale o seu nome?');
-
-            userState[userId].stage = 'getNameLeade';
-        } else if (userMessage !== null && userMessage === '64') {
-            await simulateTyping(chat)
-            await client.sendMessage(userId, 'Você não pode fazer a submissão do resumo/artigo, pois você não é o aluno líder')
+            userState[userId].stage = 'getNameLeade'
+        } else if (msg.type === 'chat' && userMessage === '8') {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Você não pode fazer a submissão do resumo/artigo ou slide, pois você não é o aluno líder.');
 
             userState[userId].stage = 'initial';
         } else {
-            await simulateTyping(chat)
-            await client.sendMessage(userId, 'Por favor, selecione uma das opções.')
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
         }
     }
 
-    else if (userState[userId]?.stage === 'getNameLeade') {
-        await handleLeaderValidation(userMessage, userId, chat, client, userState);
-        userState[userId].stage = 'getProf';
+    else if (userState[userId].stage === 'getNameLeade') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleLeaderValidation(userId, chat, client);
+            userState[userId].stage = 'getProf';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o seu nome.');
+        }
     }
 
-    else if (userState[userId]?.stage === 'getProf') {
-        await handleTeacherValidation(userMessage, userId, chat, client, userState);
-        userState[userId].stage = 'gettitle';
+    else if (userState[userId].stage === 'getProf') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTeacherValidation(userId, chat, client);
+            userState[userId].stage = 'gettitle';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o nome do professor.');
+        }
     }
 
-    else if (userState[userId]?.stage === 'gettitle') {
-        await handleTitleValidation(userMessage, userId, chat, client, userState);
-        await client.sendMessage(userId, 'Agora vamos submeter seu resumo expandido/artigo finalizado já corrigido pelo orientador.');
-        userState[userId].stage = 'getArticleSlide';
+    else if (userState[userId].stage === 'gettitle') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTitleValidation(userId, chat, client);
+            await client.sendMessage(userId, 'Agora vamos submeter seu resumo expandido/artigo finalizado. Lembrando que só será aceito arquivos no formato PDF.');
+            userState[userId].stage = 'getArticleEnd';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o título do seu trabalho.');
+        }
     }
 
-    else if (userState[userId]?.stage === 'getArticleSlide') {
+    else if (userState[userId].stage === 'getArticleEnd') {
         const contact = await msg.getContact();
         const name = contact.pushname;
-        await handleArticleSlide(userId, chat, client, userState, msg)
-        await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido com sucesso.');
-        await simulateTyping(chat);
-        await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Fique atento a novas etapas da Jornada de Inovação.`);
+        const media = await msg.downloadMedia();
+        if (msg.hasMedia && media.mimetype === 'application/pdf') {
+            await handleArticleSlide(userId, chat, client, userState, msg)
+            await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido com sucesso.');
+            await simulateTyping(chat);
+            await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Fique atento a novas etapas da Jornada de Inovação.`);
+            userState[userId].stage = 'initial'
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Você precisa enviar um arquivo no formato PDF.');
+        }
     }
 
-    if (msg.body !== null && msg.body === '4' && msg.from.endsWith('@c.us')) {
+    if (userState[userId].stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '4') {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Você é o aluno líder?\n\n7 - Sim\n8 - Não');
+            userState[userId].stage = 'questionLeader';
+        }
+    }
 
+    else if (userState[userId].stage === 'questionLeader') {
+        if (msg.type === 'chat' && userMessage === '7') {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Me fale o seu nome?');
+            userState[userId].stage = 'getName'
+        } else if (msg.type === 'chat' && userMessage === '8') {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Você não pode fazer a submissão do resumo/artigo ou slide, pois você não é o aluno líder.');
+            userState[userId].stage = 'initial';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getName') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleLeaderValidation(userId, chat, client);
+            userState[userId].stage = 'getProfessor';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o seu nome.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getProfessor') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTeacherValidation(userId, chat, client);
+            userState[userId].stage = 'title';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o nome do professor.');
+        }
+    }
+
+    else if (userState[userId].stage === 'title') {
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTitleValidation(userId, chat, client);
+            await client.sendMessage(userId, 'Agora vamos submeter o slide para apresentação. Lembrando que só será aceito arquivos no formato PDF.');
+            userState[userId].stage = 'getSlide';
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o título do seu trabalho.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getSlide') {
+        const contact = await msg.getContact();
+        const name = contact.pushname;
+        const media = await msg.downloadMedia();
+        if (msg.hasMedia && media.mimetype === 'application/pdf') {
+            await handleArticleSlide(userId, chat, client, userState, msg)
+            await client.sendMessage(userId, 'Seu slide foi submetido com sucesso.');
+            await simulateTyping(chat);
+            await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Agora gere o seu QRcode e se prepare para a apresentação.`);
+            userState[userId].stage = 'initial'
+        } else {
+            await simulateTyping(chat);
+            await client.sendMessage(userId, 'Você precisa enviar um arquivo no formato PDF.');
+        }
     }
 
     if (msg.body !== null && msg.body === '5' && msg.from.endsWith('@c.us')) {
