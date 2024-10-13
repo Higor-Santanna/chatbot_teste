@@ -76,9 +76,6 @@ client.on('message', async msg => {
         userState[userId] = { stage: 'initial' }; // Estado inicial
     }
 
-    console.log(`Mensagem do usuário: ${userMessage}`);
-    console.log(`Estado do usuário: ${userState[userId]?.stage}`);
-
     if (userState[userId].stage === 'initial') {
         await simulateTyping(chat)
         await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição e submissão do resumo\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`);
