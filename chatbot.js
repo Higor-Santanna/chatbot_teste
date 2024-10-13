@@ -1,6 +1,7 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-const { Client, LocalAuth } = require('whatsapp-web.js'); // Mudança Buttons
+//const axios = require('axios');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js'); // Mudança Buttons
 const client = new Client({
     authStrategy: new LocalAuth()
 });
@@ -53,6 +54,13 @@ const handleArticleSlide = async (userId, chat, client) => {
     await simulateTyping(chat);
 }
 
+// Função para carregar a imagem a partir da URL
+// const getImageFromUrl = async (url) => {
+//     const response = await axios.get(url, { responseType: 'arraybuffer' });
+//     const media = new MessageMedia('image/jpeg', Buffer.from(response.data).toString('base64'), 'image.jpg');
+//     return media;
+// };
+
 const emojiRegex = /[\p{Emoji_Presentation}]/u;
 const textWithAccentsRegex = /^[\p{L}\s]+$/u;
 //Manipulador de mensagens
@@ -60,6 +68,9 @@ client.on('message', async msg => {
     const chat = await msg.getChat();
     const userId = msg.from;
     const userMessage = msg.body;
+    const contact = await msg.getContact();
+    const name = contact.pushname;
+    const media = await msg.downloadMedia();
 
     if (!userState[userId]) {
         userState[userId] = { stage: 'initial' }; // Estado inicial
@@ -70,9 +81,7 @@ client.on('message', async msg => {
 
     if (userState[userId].stage === 'initial') {
         await simulateTyping(chat)
-        const contact = await msg.getContact(); //Pegando o contato
-        const name = contact.pushname; //Pegando o nome do contato
-        await client.sendMessage(userId, 'Olá! ' + name.split(" ")[0] + 'Sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição e submissão do resumo\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido');
+        await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição e submissão do resumo\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`);
 
         userState[userId] = { stage: 'mainMenu' };
     }
@@ -283,9 +292,6 @@ client.on('message', async msg => {
     }
 
     else if (userState[userId].stage === 'getSimpleArticle') {
-        const contact = await msg.getContact();
-        const name = contact.pushname;
-        const media = await msg.downloadMedia();
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
             await handleArticleSlide(userId, chat, client)
             await client.sendMessage(userId, 'Seu resumo simples foi submetido com sucesso');
@@ -353,9 +359,6 @@ client.on('message', async msg => {
     }
 
     else if (userState[userId].stage === 'getArticleAndSlide') {
-        const contact = await msg.getContact();
-        const name = contact.pushname;
-        const media = await msg.downloadMedia();
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
             await handleArticleSlide(userId, chat, client, userState, msg)
             await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido para a correção do orientador.');
@@ -424,9 +427,6 @@ client.on('message', async msg => {
     }
 
     else if (userState[userId].stage === 'getArticleEnd') {
-        const contact = await msg.getContact();
-        const name = contact.pushname;
-        const media = await msg.downloadMedia();
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
             await handleArticleSlide(userId, chat, client, userState, msg)
             await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido com sucesso.');
@@ -494,9 +494,6 @@ client.on('message', async msg => {
     }
 
     else if (userState[userId].stage === 'getSlide') {
-        const contact = await msg.getContact();
-        const name = contact.pushname;
-        const media = await msg.downloadMedia();
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
             await handleArticleSlide(userId, chat, client, userState, msg)
             await client.sendMessage(userId, 'Seu slide foi submetido com sucesso.');
@@ -509,8 +506,71 @@ client.on('message', async msg => {
         }
     }
 
-    if (msg.body !== null && msg.body === '5' && msg.from.endsWith('@c.us')) {
-
+    if (userState[userId]?.stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '5') {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Me fale o seu nome?');
+            userState[userId].stage = 'nameStudent'
+        }
     }
 
+    else if (userState[userId].stage === 'nameStudent'){
+        if(msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)){
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Verificando a matrícula...')
+            await simulateTyping(chat)
+            await client.sendMessage(userId, `Ok você ${userMessage} é aluno da UNIVC. Qual é o seu email? Coloque um email válido é por ele que você recerá o seu QRcode`)
+
+            userState[userId].stage = 'getEmailStudent'
+        } else {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o seu nome.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getEmailStudent'){
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage)){
+            await simulateTyping(chat)
+            await client.sendMessage(userId, `Ok seu email ${userMessage} foi cadastrado. Agora me fale o nome do seu professor orientador?`)
+
+            userState[userId].stage = 'getTeacherManeger'
+        } else {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o seu email.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getTeacherManeger'){
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTeacherValidation(userId, chat, client);
+            userState[userId].stage = 'getTitleJob';
+        } else {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o nome do seu professor orientador.');
+        }
+    }
+
+    else if (userState[userId].stage === 'getTitleJob'){
+        if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
+            await handleTitleValidation(userId, chat, client);
+            // const image = 'https://drive.google.com/file/d/1KwVN2B1KWISw4bRiKL_ENWz86vtsQlLO/view?usp=drive_link'; // Na semana da jornada atualizar esse link
+            // const media = await getImageFromUrl(image);
+            // await client.sendMessage(userId, media);
+            await simulateTyping(chat)
+            await client.sendMessage(userId, "Seu QRcode foi gerado. Enviamos o email com uma cópia dele, fique atento a data da apresentação. Boa sorte!")
+
+            userState[userId].stage = 'initial';
+        } else {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Apenas mensagens de texto são aceitas. Por favor, digite o título do seu trabalho');
+        }
+    }
+
+    if (userState[userId]?.stage === 'mainMenu') {
+        if (msg.type === 'chat' && userMessage === '6') {
+            await simulateTyping(chat)
+            await client.sendMessage(userId, 'Aqui está o link com os modelos de artigo, resumo simples, resumo expandido e slide:\n\n https://drive.google.com/drive/folders/1B-3FhI9MXxewgoQDpXSI8pRg1g1vA3xP?usp=sharing');
+            userState[userId].stage = 'initial'
+        }
+    }
 });
