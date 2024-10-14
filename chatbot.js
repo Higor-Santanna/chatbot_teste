@@ -1,7 +1,6 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-//const axios = require('axios');
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js'); // Mudança Buttons
+const { Client, LocalAuth} = require('whatsapp-web.js'); // Mudança Buttons
 const client = new Client({
     authStrategy: new LocalAuth()
 });
@@ -53,13 +52,6 @@ const handleArticleSlide = async (userId, chat, client) => {
     await client.sendMessage(userId, 'Recebendo e armazenando seu arquivo em nosso sistema...');
     await simulateTyping(chat);
 }
-
-// Função para carregar a imagem a partir da URL
-// const getImageFromUrl = async (url) => {
-//     const response = await axios.get(url, { responseType: 'arraybuffer' });
-//     const media = new MessageMedia('image/jpeg', Buffer.from(response.data).toString('base64'), 'image.jpg');
-//     return media;
-// };
 
 const emojiRegex = /[\p{Emoji_Presentation}]/u;
 const textWithAccentsRegex = /^[\p{L}\s]+$/u;
@@ -205,7 +197,7 @@ client.on('message', async msg => {
             await simulateTyping(chat)
             await client.sendMessage(userId, `Ok, você selecionou o curso: ${courses[userMessage]}`);
             await simulateTyping(chat)
-            await client.sendMessage(userId, `Qual seu período?\n\n1 - 1º (primeiro período)\n2 - 2º (segundo período)\n3 - 3º (terceiro período)\n4 - 4º (quarto período)\n5 - 5º (quinto período)\n6 - 6º (sexto período)\n7 - 7º (sétimo período)\n8 8º (oitavo período)\n9 - 9º (nono período)\n10 - 10º (décimo período)`);
+            await client.sendMessage(userId, `Qual seu período?\n\n1 - 1º (primeiro período)\n2 - 2º (segundo período)\n3 - 3º (terceiro período)\n4 - 4º (quarto período)\n5 - 5º (quinto período)\n6 - 6º (sexto período)\n7 - 7º (sétimo período)\n8 - 8º (oitavo período)\n9 - 9º (nono período)\n10 - 10º (décimo período)`);
 
             userState[userId].stage = 'getSendPoll';
         } else {
@@ -234,7 +226,6 @@ client.on('message', async msg => {
             await client.sendMessage(userId, `Qual  o tema do seu trabalho? \n\n1 - Análise Contratual Automatizada\n2 - Análise de Dados Empresariais\n3- Análise de Sentimento em Mídias Sociais\n4 - Análise de Sentimentos em Processos\n5 - Análise Preditiva (antecipação)\n6 - Apoio à Decisão Clínica\n7 - Aprendizado de Máquina em Finanças\n8 - Aprendizado de Máquina para Otimização\n9 - Arte Generativa\n10 - Assistentes Virtuais em Saúde\n11 - Automação de Processos de Negócios\n12 - Automatização de Documentação Legal\n13 - Automatização de Processos\n14 - Avaliação de Riscos Jurídicos\n15 - Chatbots e Assistência Virtual\n16 - Chatbots Jurídicos\n17 - Cibersegurança\n18 - Descoberta de Medicamentos\n19 - Ensino Assistido por Computador\n20 - Ética em Inteligência Artificial\n21 - Gestão de Dados de Saúde\n22 - Gestão de Riscos\n23 - Impacto da IA na Educação\n24 - Manufatura Inteligente\n25 - Otimização de Recursos Hospitalares\n26 - Pesquisa Jurídica\n27 - Prevenção e Monitoramento de Doenças\n28 - Previsão de Resultados Judiciais\n29 - Realidade Aumentada e Virtual\n30 - Robótica e Controle Autônomo\n31 - Segurança Cibernética Jurídica`);
 
             userState[userId].stage = 'getThemeOfWork';
-            console.log(`Estado atualizado para: ${userState[userId]?.stage}`);
         } else {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Por favor, escolha uma das opções da enquete.');
@@ -550,9 +541,6 @@ client.on('message', async msg => {
     else if (userState[userId].stage === 'getTitleJob'){
         if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
             await handleTitleValidation(userId, chat, client);
-            // const image = 'https://drive.google.com/file/d/1KwVN2B1KWISw4bRiKL_ENWz86vtsQlLO/view?usp=drive_link'; // Na semana da jornada atualizar esse link
-            // const media = await getImageFromUrl(image);
-            // await client.sendMessage(userId, media);
             await simulateTyping(chat)
             await client.sendMessage(userId, "Seu QRcode foi gerado. Enviamos o email com uma cópia dele, fique atento a data da apresentação. Boa sorte!")
 
