@@ -1,6 +1,6 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-const { Client, LocalAuth} = require('whatsapp-web.js'); // Mudança Buttons
+const { Client, LocalAuth} = require('whatsapp-web.js'); 
 const client = new Client({
     authStrategy: new LocalAuth()
 });
@@ -19,10 +19,10 @@ const delay = ms => new Promise(res => setTimeout(res, ms)); // Função que usa
 
 const userState = {}; // Armazenar o estado dos usuários
 
-const simulateTyping = async (chat, delayTime1 = 1000, delayTime2 = 1000) => {
-    await delay(delayTime1);
+const simulateTyping = async (chat, delayTime = 1000) => {
+    await delay(delayTime);
     await chat.sendStateTyping();
-    await delay(delayTime2);
+    await delay(delayTime);
 };
 
 const handleLeaderValidation = async (userId, chat, client) => {
@@ -53,16 +53,16 @@ const handleArticleSlide = async (userId, chat, client) => {
     await simulateTyping(chat);
 }
 
-const emojiRegex = /[\p{Emoji_Presentation}]/u;
-const textWithAccentsRegex = /^[\p{L}\s]+$/u;
+const emojiRegex = /[\p{Emoji_Presentation}]/u;//bloqueia emogis
+const textWithAccentsRegex = /^[\p{L}\s]+$/u;//reconhece palavras com acento
 //Manipulador de mensagens
 client.on('message', async msg => {
-    const chat = await msg.getChat();
-    const userId = msg.from;
-    const userMessage = msg.body;
-    const contact = await msg.getContact();
-    const name = contact.pushname;
-    const media = await msg.downloadMedia();
+    const chat = await msg.getChat();//Obtém o objeto chat associado à mensagem. O objeto representa a conversa onde a mensagem foi recebida.
+    const userId = msg.from;//Armazena o número de telefone do remetente da mensagem.userId será utilizado para atualizar os estados
+    const userMessage = msg.body;//Pega o conteúdo da mensagem.
+    const contact = await msg.getContact();//Obtém o contato do usuário que enviou a mensagem.
+    const name = contact.pushname;//Armazena o nome do usuário associado ao contato. 
+    const media = await msg.downloadMedia();//Faz o download de arquivos caso tenha 
 
     if (!userState[userId]) {
         userState[userId] = { stage: 'initial' }; // Estado inicial
@@ -70,7 +70,7 @@ client.on('message', async msg => {
 
     if (userState[userId].stage === 'initial') {
         await simulateTyping(chat)
-        await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição e submissão do resumo\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`);
+        await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição do grupo e submissão do resumo simples\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`);
 
         userState[userId] = { stage: 'mainMenu' };
     }
@@ -94,7 +94,7 @@ client.on('message', async msg => {
             userState[userId].stage = 'initial';
         } else {
             await simulateTyping(chat);
-            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
+            await client.sendMessage(userId, 'Por favor, envie 7 para sim e 8 para não');
         }
     }
 
@@ -311,13 +311,13 @@ client.on('message', async msg => {
             userState[userId].stage = 'initial';
         } else {
             await simulateTyping(chat);
-            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
+            await client.sendMessage(userId, 'Por favor, envie 7 para sim e 8 para não');
         }
     }
 
     else if (userState[userId].stage === 'getNameLeader') {
         if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
-            await handleLeaderValidation(userId, chat, client, msg)
+            await handleLeaderValidation(userId, chat, client)
             userState[userId].stage = 'getTeacher';
         } else {
             await simulateTyping(chat);
@@ -327,7 +327,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getTeacher') {
         if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
-            await handleTeacherValidation(userId, chat, client, msg);
+            await handleTeacherValidation(userId, chat, client);
             userState[userId].stage = 'getTitle';
         } else {
             await simulateTyping(chat);
@@ -337,7 +337,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getTitle') {
         if (msg.type === 'chat' && !emojiRegex.test(userMessage) && textWithAccentsRegex.test(userMessage)) {
-            await handleTitleValidation(userId, chat, client, msg);
+            await handleTitleValidation(userId, chat, client);
             await client.sendMessage(userId, 'Agora vamos submeter seu resumo expandido/artigo finalizado e enviar o mesmo ao orientador para correção. Enviar o arquivo no formato PDF.');
             userState[userId].stage = 'getArticleAndSlide';
         } else {
@@ -348,7 +348,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getArticleAndSlide') {
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
-            await handleArticleSlide(userId, chat, client, userState, msg)
+            await handleArticleSlide(userId, chat, client)
             await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido para a correção do orientador.');
             await simulateTyping(chat);
             await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Fique atento a novas etapas da Jornada de Inovação.`);
@@ -379,7 +379,7 @@ client.on('message', async msg => {
             userState[userId].stage = 'initial';
         } else {
             await simulateTyping(chat);
-            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
+            await client.sendMessage(userId, 'Por favor, envie 7 para sim e 8 para não');
         }
     }
 
@@ -416,7 +416,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getArticleEnd') {
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
-            await handleArticleSlide(userId, chat, client, userState, msg)
+            await handleArticleSlide(userId, chat, client)
             await client.sendMessage(userId, 'Seu artigo finalizado/resumo expandido foi submetido com sucesso.');
             await simulateTyping(chat);
             await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Fique atento a novas etapas da Jornada de Inovação.`);
@@ -446,7 +446,7 @@ client.on('message', async msg => {
             userState[userId].stage = 'initial';
         } else {
             await simulateTyping(chat);
-            await client.sendMessage(userId, 'Por favor, envie uma resposta válida em texto.');
+            await client.sendMessage(userId, 'Por favor, envie 7 para sim e 8 para não');
         }
     }
 
@@ -483,7 +483,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getSlide') {
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
-            await handleArticleSlide(userId, chat, client, userState, msg)
+            await handleArticleSlide(userId, chat, client)
             await client.sendMessage(userId, 'Seu slide foi submetido com sucesso.');
             await simulateTyping(chat);
             await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Agora gere o seu QRcode e se prepare para a apresentação.`);
