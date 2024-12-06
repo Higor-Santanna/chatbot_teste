@@ -5,9 +5,6 @@
 
 <h1 align="center" style="font-weight: bold;">Chatbot Jornada de Inovação 💻</h1>
 
-![nodeJS][NODE__BADGE]
-![javascript][JAVASCRIPT__BADGE]
-
 <p align="center">
  <a href="#about">Sobre</a> • 
  <a href="#images">Funcionamento</a> • 
@@ -53,3 +50,11 @@ git clone your-project-url-in-github
 cd project-name
 npm some-command-to-run
 ```
+
+<h3>Ativando o bot</h3>
+
+```bash
+node chatbot.js
+```
+
+<p>Ao digitar o comando acima no terminal ele irá gerar um QR Code onde você deve scaneear e ele será ativo.</p>
