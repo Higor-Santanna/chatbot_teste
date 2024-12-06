@@ -1,9 +1,9 @@
 // leitor de qr code
-const qrcode = require('qrcode-terminal');
-const { Client, LocalAuth} = require('whatsapp-web.js'); 
+const qrcode = require('qrcode-terminal');//gera o qr code no terminal
+const { Client, LocalAuth} = require('whatsapp-web.js');//client gera conexão com whatsapp e o LocalAuth faz a autenticação
 const client = new Client({
     authStrategy: new LocalAuth()
-});
+}); // cria um novo cliente e salva a sua sessão evitando gerar um novo qrcode a cada alteração feita no código.
 // serviço de leitura do qr code
 client.on('qr', qr => {
     qrcode.generate(qr, { small: true });
@@ -20,10 +20,10 @@ const delay = ms => new Promise(res => setTimeout(res, ms)); // Função que usa
 const userState = {}; // Armazenar o estado dos usuários
 
 const simulateTyping = async (chat, delayTime = 1000) => {
+    await delay(delayTime);// tempo de dalay
+    await chat.sendStateTyping(); //simula uma digitação
     await delay(delayTime);
-    await chat.sendStateTyping();
-    await delay(delayTime);
-};
+};//função reponsável pela simulação de digitação
 
 const handleLeaderValidation = async (userId, chat, client) => {
     await simulateTyping(chat);
@@ -67,19 +67,17 @@ client.on('message', async msg => {
     if (!userState[userId]) {
         userState[userId] = { stage: 'initial' }; // Estado inicial
     }
-
-    if (userState[userId].stage === 'initial') {
-        await simulateTyping(chat)
-        await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição do grupo e submissão do resumo simples\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`);
-
-        userState[userId] = { stage: 'mainMenu' };
+    if (userState[userId].stage === 'initial') {//inicia a conversa
+        await simulateTyping(chat)//simula digitação
+        await client.sendMessage(userId, `Olá ${name}, sou o Travis assistente virtual da jornada. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Inscrição do grupo e submissão do resumo simples\n2 - Enviar ao orientador para correção o resumo expandido ou artigo finalizado\n3 - Submeter o resumo expandido ou artigo finalizado\n4 - Submeter os slides\n5 - Gerar seu QR Code\n6 - Pegar os templates de artigo, slides, resumo simples e expandido`); //envia uma mensagem com as opções de 1 a 6 para o usuário escolher
+        userState[userId] = { stage: 'mainMenu' };//atualiza o estado
     }
 
-    if (userState[userId].stage === 'mainMenu') {
-        if (msg.type === 'chat' && userMessage === '1') {
+    if (userState[userId].stage === 'mainMenu') { //recebe o status atualizado
+        if (msg.type === 'chat' && userMessage === '1') { // verifica se o texto que o usuário enviou
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Você será o aluno líder?\n\n7 - Sim\n8 - Não');
-            userState[userId].stage = 'leaderQuestion';
+            userState[userId].stage = 'leaderQuestion';//atualiza o estado
         }
     }
 
@@ -127,8 +125,7 @@ client.on('message', async msg => {
     }
 
     else if (userState[userId].stage === 'getGroupMembers') {
-        const groupMembers = userMessage.split(',').map(names => names.trim());
-
+        const groupMembers = userMessage.split(',').map(names => names.trim());//Divide a mensagem do usuário em uma lista de nomes, usando a vírgula como delimitador, o map deixa os nomes no formato de uma lista
         if (groupMembers.length >= 5 && groupMembers.length <= 10 && msg.type === 'chat' && !emojiRegex.test(userMessage)) {
             await simulateTyping(chat)
             await client.sendMessage(userId, 'Verificando se os alunos estão inscritos em algum grupo...');
@@ -281,7 +278,7 @@ client.on('message', async msg => {
 
     else if (userState[userId].stage === 'getSimpleArticle') {
         if (msg.hasMedia && media.mimetype === 'application/pdf') {
-            await handleArticleSlide(userId, chat, client)
+            await handleArticleSlide(userId, chat, client)//passa o ID do usuário, o arquivo que foi enviado e a autenticação.
             await client.sendMessage(userId, 'Seu resumo simples foi submetido com sucesso');
             await simulateTyping(chat);
             await client.sendMessage(userId, `Parabéns ${name} por concluir esta etapa dentro do prazo. Fique atento a novas etapas da Jornada de Inovação.`);
